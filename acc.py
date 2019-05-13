@@ -12,15 +12,33 @@ s.bind((host, port))
 
 while 1:
 	try:
+
+		#accl, gryo, magno
+		# acc = m/s^2;  gyro=rad/sec;  magno=microTelsa
+
+		# read from socket
 		message_str, address = s.recvfrom(8192)
+
 		
-		# Convert string into List of float and put them into a dictionary
+		# Convert string into list of float 
 		data_ls = message_str.split(",")
 		data_ls = [float(i) for i in data_ls]
+		# print len(data_ls)
 		# print data_ls
-		var_ls = ['time_stamp','accl_id','accl_x','accl_y','accl_z', 'magn_id', 'magn_x', 'magn_y', 'magn_z', 'gyro_id', 'gyro_x', 'gryo_y', 'gyro_z']
+
+
+		#append previous values if len is not 13
+		if len(data_ls) == 9:
+			data_ls.append(prev_magno_ls)
+
+		elif len(data_ls) == 5:
+			data_ls.append(prev_gyro_ls)
+			data_ls.append(prev_magno_ls)
+
+		#convert into a dictionary
+		var_ls = ['time_stamp','accl_id','accl_x','accl_y','accl_z', 'gyro_id', 'gyro_x', 'gryo_y', 'gyro_z', 'magn_id', 'magn_x', 'magn_y', 'magn_z']
 		data = dict(zip(var_ls, data_ls))
-        # acc = m/s^2;  gyro=rad/sec;  magno=microTelsa
+		# print data
 
 		# Combine Accelerometer(m/s^2) to get angle values
 		
@@ -31,11 +49,15 @@ while 1:
 
 		# Calculate YAW from magnetometer formual taken from http://students.iitk.ac.in/roboclub/2017/12/21/Beginners-Guide-to-IMU.html
 
-		mag_x_update = data['magn_x']*cos(pitch_x_accel) + data['magn_y']*sin(roll_y_accel)*sin(pitch_x_accel) + data['magn_z']*cos(roll_y_accel)*sin(pitch_x_accel)
-		mag_y_update = data['magn_y']*cos(roll_y_accel) - data['magn_z']*sin(roll_y_accel)
-		yaw_z_magn = 180 * atan2(-mag_y_update,mag_x_update)/M_PI;
+		mag_x_update = data['magn_x']*math.cos(pitch_x_accel) + data['magn_y']*math.sin(roll_y_accel)*math.sin(pitch_x_accel) + data['magn_z']*math.cos(roll_y_accel)*math.sin(pitch_x_accel)
+		mag_y_update = data['magn_y']*math.cos(roll_y_accel) - data['magn_z']*math.sin(roll_y_accel)
+		yaw_z_magn = 180 * math.atan2(-mag_y_update, mag_x_update)/math.pi;
 
+		print "yaw_z_magn :", yaw_z_magn
+		
 		# Calculate the loop time from the timestamp
+
+
 
 
 		# Calculate the angles from the gyro
@@ -47,7 +69,14 @@ while 1:
 		# CFangleX=AA*(CFangleX+rate_gyr_x*DT) +(1 - AA) * AccXangle;
 		# CFangleY=AA*(CFangleY+rate_gyr_y*DT) +(1 - AA) * AccYangle;
 		# CFangleY=AA*(CFangleY+rate_gyr_y*DT) +(1 - AA) * yaw;
-      
+
+
+		# Update previous value
+		prev_magno_ls = data_ls[-4:]
+		prev_gyro_ls  = data_ls[5:8]
+
+		# print prev_gyro_ls
+		# print prev_magno_ls
 
 	except (KeyboardInterrupt, SystemExit):
 		raise
@@ -55,24 +84,5 @@ while 1:
 		traceback.print_exc()
 #-----------------------------------------------------------
 
-
-
-# Combine Accelerometer(m/s^2) to get angle values
-# pitch = 180 * atan2(accelX, sqrt(accelY*accelY + accelZ*accelZ))/PI;
-# roll = 180 * atan2(accelY, sqrt(accelX*accelX + accelZ*accelZ))/PI;
-
-
-
-# #Calculate YAW from magnetometer
-# mag_x = magReadX*cos(pitch) + magReadY*sin(roll)*sin(pitch) + magReadZ*cos(roll)*sin(pitch)
-# mag_y = magReadY * cos(roll) - magReadZ * sin(roll)
-# yaw = 180 * atan2(-mag_y,mag_x)/M_PI;
-
-
-
-# #Fusion to get Pitch 
-# CFangleX=AA*(CFangleX+rate_gyr_x*DT) +(1 - AA) * AccXangle;
-# CFangleY=AA*(CFangleY+rate_gyr_y*DT) +(1 - AA) * AccYangle;
-# CFangleY=AA*(CFangleY+rate_gyr_y*DT) +(1 - AA) * yaw;
 
 
